@@ -12,48 +12,55 @@ onMounted(async () => {
 })
 
 const getTree = async () => {
-  const res = await instance.get('Contacts/AllowDepartment', {
-    params: { 'quark_s': '1ec5eb2cd9eaf8d3fbe130f5622c1ff5fe0e976e2c0f21da3beadc30e5c55bd5' } // 东软睿驰公司ID
-  })
-  console.log(res);
-  if (res.Code === 1) {
-    // 先筛出来一级 再二级 再三级 为避免重复遍历 筛完的不再参与下次筛选
-    const level2 = [] // 筛选完一级后剩下的
-    const level3 = [] // 筛选完二级后剩下的
-    res.Data.forEach(item => {
-      if (item.level === 1) {
-        tree.value.push(item)
-      } else {
-        level2.push(item)
-      }
+  try {
+    const res = await instance.get('Contacts/AllowDepartment', {
+      params: { 'quark_s': '1ec5eb2cd9eaf8d3fbe130f5622c1ff5fe0e976e2c0f21da3beadc30e5c55bd5' } // 东软睿驰公司ID
     })
-    // 剔除一级后剩下的二级和三级数据
-    level2.forEach(item => {
-      if (item.level === 2) {
-        const parentNode = tree.value.find(parent => parent.id === item.pid)
-        parentNode.children || (parentNode.children = [])
-        parentNode.children.push(item)
-      } else {
-        level3.push(item)
-      }
-    })
-    // 剔除一二级后剩下的三级数据 还有个零级东软睿驰这里扔掉不要了
-    level3.forEach(item => {
-      if (item.level === 3) {
-        const parentNode = level2.find(parent => parent.id === item.pid)
-        parentNode.children || (parentNode.children = [])
-        parentNode.children.push(item)
-      }
-    })
-  } else if (res.slice(0, 10) === '<!doctype ') {
+    if (res.Code === 1) {
+      // 先筛出来一级 再二级 再三级 为避免重复遍历 筛完的不再参与下次筛选
+      const level2 = [] // 筛选完一级后剩下的
+      const level3 = [] // 筛选完二级后剩下的
+      res.Data.forEach(item => {
+        if (item.level === 1) {
+          tree.value.push(item)
+        } else {
+          level2.push(item)
+        }
+      })
+      // 剔除一级后剩下的二级和三级数据
+      level2.forEach(item => {
+        if (item.level === 2) {
+          const parentNode = tree.value.find(parent => parent.id === item.pid)
+          parentNode.children || (parentNode.children = [])
+          parentNode.children.push(item)
+        } else {
+          level3.push(item)
+        }
+      })
+      // 剔除一二级后剩下的三级数据 还有个零级东软睿驰这里扔掉不要了
+      level3.forEach(item => {
+        if (item.level === 3) {
+          const parentNode = level2.find(parent => parent.id === item.pid)
+          parentNode.children || (parentNode.children = [])
+          parentNode.children.push(item)
+        }
+      })
+    } else if (res.slice(0, 10) === '<!doctype ') {
+      ElMessage({
+        message: 'Cookie失效，请重新设置Cookie',
+        type: 'error',
+      })
+      showDialog.value = true
+    }
+    // 进来默认展示全部数据
+    await search()
+  } catch (e) {
     ElMessage({
       message: 'Cookie失效，请重新设置Cookie',
       type: 'error',
     })
     showDialog.value = true
   }
-  // 进来默认展示全部数据
-  await search()
 }
 
 const getDepartNum = async () => {
