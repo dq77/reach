@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, computed } from 'vue'
 import instance from './api'
 import throttle from 'lodash/throttle'
 import { Search } from '@element-plus/icons-vue'
@@ -8,7 +8,6 @@ const tree = ref([])
 const showDialog = ref(false)
 onMounted(async () => {
   await getTree()
-  getDepartNum()
 })
 
 const getTree = async () => {
@@ -53,8 +52,11 @@ const getTree = async () => {
   }
   // 进来默认展示全部数据
   await search()
+  getDepartNum()
 }
 
+const flashIndex = ref(0)
+const totalLength = ref(0)
 const getDepartNum = async () => {
   const departData = localStorage.getItem('departData') ? JSON.parse(localStorage.getItem('departData')) : []
   let list = tree.value
@@ -63,6 +65,8 @@ const getDepartNum = async () => {
       list = list.concat(item.children);
     }
   })
+  flashIndex.value = 0
+  totalLength.value = list.length
   for (const treeItem of list) {
     const localDepartItem = departData.find(ele => ele.id === treeItem.id)
     if (localDepartItem) {
@@ -81,8 +85,30 @@ const getDepartNum = async () => {
         num: treeItem.num
       })
     }
+    flashIndex.value = flashIndex.value + 1
   }
+  ElMessage({ message: '加载完成', type: 'success' })
   localStorage.setItem('departData', JSON.stringify(departData))
+}
+
+
+const flashDialog = ref(false)
+const percentage = computed(() => {
+  return totalLength.value ? (flashIndex.value * 100 / totalLength.value) : 0
+})
+const flash = async () => {
+  if (!localStorage.getItem('departData')) {
+    return ElMessage({
+      message: '正在刷新中，请稍后重试......',
+      type: 'warning',
+    })
+  }
+  await ElMessageBox.confirm('刷新将会耗费大量服务器资源，且耗时较长。是否确认继续刷新？', '建议不要频繁刷新',
+    { confirmButtonText: '是', cancelButtonText: '否', type: 'warning', }
+  )
+  flashDialog.value = true
+  localStorage.removeItem('departData')
+  getDepartNum()
 }
 
 const getUserDetail = async () => {
@@ -229,6 +255,7 @@ const handleClose = async () => {
       <div class="top">
         <el-input v-model="searchText" class="search-input" :prefix-icon="Search" placeholder="搜索" clearable></el-input>
         <el-button @click="search" class="search-btn" type="primary">搜索</el-button>
+        <el-button @click="flash" class="flash-btn" type="warning">人数刷新</el-button>
         <div class="tips" v-if="userList[0]">共<span class="num">{{ total }}</span>人</div>
       </div>
       <el-scrollbar class="scrollMenuBox" @scroll="barScroll" ref="scrollbarRef">
@@ -256,6 +283,25 @@ const handleClose = async () => {
     <template #footer>
       <div class="dialog-footer">
         <el-button type="primary" @click="handleClose">确认</el-button>
+      </div>
+    </template>
+  </el-dialog>
+  <el-dialog
+    v-model="flashDialog"
+    :close-on-click-modal='false'
+    :show-close='false'
+    title="刷新中，请稍候"
+    width="500"
+  >
+    <el-text v-if="flashIndex !== totalLength" class="mx-1" type="primary">刷新中请不要关闭本页面，请耐心等待。</el-text>
+    <el-text v-else class="mx-1" type="success">刷新完成！</el-text>
+    <el-progress :percentage='percentage' :showText='false' :stroke-width="15" :status="flashIndex === totalLength ? 'success' : ''" style='margin: 14px 0;'/>
+    <span>{{ flashIndex }} / {{ totalLength }}</span>
+    <template #footer>
+      <div class="dialog-footer">
+        <el-button type="primary" :disabled='flashIndex !== totalLength' @click="flashDialog = false">
+          完成
+        </el-button>
       </div>
     </template>
   </el-dialog>
@@ -287,6 +333,9 @@ const handleClose = async () => {
       }
       .search-btn{
         margin-left: 16px;
+      }
+      .flash-btn{
+        margin-left: 26px;
       }
       .tips{
         margin-top: 6px;
