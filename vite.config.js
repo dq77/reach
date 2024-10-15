@@ -20,11 +20,5 @@ export default defineConfig({
     outDir: 'docs', // 默认值是'dist'
   },
   server: {
-    proxy: {
-      '/reach': {
-        target: 'https://er.767766.xyz/', // 目标后端服务器地址
-        changeOrigin: true,
-      },
-    },
   },
 })
