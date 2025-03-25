@@ -245,9 +245,19 @@ const handleClose = async () => {
 }
 
 const showChange = () => {
-  const oldDepartData = localStorage.getItem('oldDepartData') ? JSON.parse(localStorage.getItem('oldDepartData')) : []
+  // 仅限前100人对比
+  const oldDepartDataStr = localStorage.getItem('oldDepartData')
+  const departDataStr = localStorage.getItem('departData')
+  if (!oldDepartDataStr || !departDataStr) {
+    return ElMessage({
+      message: '不存在历史数据，请先进行人数刷新',
+      type: 'error',
+    })
+  }
+  const oldDepartData = JSON.parse(oldDepartDataStr)
+  const departData = JSON.parse(departDataStr)
   const oldUsers = oldDepartData.find(item => item.id === departmentId.value)?.users || []
-  const newUsers = localStorage.getItem('departData')? JSON.parse(localStorage.getItem('departData')).find(item => item.id === departmentId.value)?.users || [] : []
+  const newUsers = departData.find(item => item.id === departmentId.value)?.users || []
   const addUsers = newUsers.filter(item => !oldUsers.includes(item))
   const delUsers = oldUsers.filter(item => !newUsers.includes(item))
   if (addUsers.length) {
