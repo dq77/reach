@@ -133,9 +133,11 @@ const getUserDetail = async () => {
       if (res.Code === 200) {
         item.Email = res.Data.Email
         item.EmployedDate = res.Data.EmployedDate
+        item.name = res.Data.Name
       }
       userData.push({
         userId: item.userId,
+        name: item.name,
         Email: item.Email,
         EmployedDate: item.EmployedDate
       })
