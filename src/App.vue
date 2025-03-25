@@ -111,7 +111,7 @@ const flash = async () => {
     { confirmButtonText: '是', cancelButtonText: '否', type: 'warning', }
   )
   flashDialog.value = true
-  localStorage.setItem('oldDepartData', JSON.stringify(departData))
+  localStorage.setItem('oldDepartData', departData)
   localStorage.removeItem('departData')
   getDepartNum()
 }
@@ -250,10 +250,18 @@ const showChange = () => {
   const newUsers = localStorage.getItem('departData')? JSON.parse(localStorage.getItem('departData')).find(item => item.id === departmentId.value)?.users || [] : []
   const addUsers = newUsers.filter(item => !oldUsers.includes(item))
   const delUsers = oldUsers.filter(item => !newUsers.includes(item))
+  if (addUsers.length) {
     ElMessage({
-      message: `新增：${addUsers.join(',')} <br/> 减少：${delUsers.join(',')}`,
+      message: `新增：${addUsers.join(',')}`,
       type: 'warning',
     })
+  }
+  if (delUsers.length) {
+    ElMessage({
+      message: `删除：${delUsers.join(',')}`,
+      type: 'warning',
+    })
+  }
 
 }
 
