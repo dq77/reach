@@ -71,17 +71,20 @@ const getDepartNum = async () => {
     const localDepartItem = departData.find(ele => ele.id === treeItem.id)
     if (localDepartItem) {
       treeItem.num = localDepartItem.num || 0
+      treeItem.users = localDepartItem.users || []
       treeItem.name = `${treeItem.name} (${treeItem.num})`
     } else {
       const res = await instance.get('Contacts/staffV2', {
-        params: { 'page_num': 1, 'page_size': 1, 'department_id': treeItem.id, 'content': '' }
+        params: { 'page_num': 1, 'page_size': 100, 'department_id': treeItem.id, 'content': '' }
       })
       if (res.Code === 1 && res.Data) {
         treeItem.num = res.Data.total || 0
+        treeItem.users = res.Data.users?.map(item => { return item.name }) || []
         treeItem.name = `${treeItem.name} (${treeItem.num})`
       }
       departData.push({
         id: treeItem.id,
+        users: treeItem.users,
         num: treeItem.num
       })
     }
@@ -97,7 +100,8 @@ const percentage = computed(() => {
   return totalLength.value ? (flashIndex.value * 100 / totalLength.value) : 0
 })
 const flash = async () => {
-  if (!localStorage.getItem('departData')) {
+  const departData = localStorage.getItem('departData')
+  if (!departData) {
     return ElMessage({
       message: '正在刷新中，请稍后重试......',
       type: 'warning',
@@ -107,6 +111,7 @@ const flash = async () => {
     { confirmButtonText: '是', cancelButtonText: '否', type: 'warning', }
   )
   flashDialog.value = true
+  localStorage.setItem('oldDepartData', JSON.stringify(departData))
   localStorage.removeItem('departData')
   getDepartNum()
 }
@@ -237,6 +242,19 @@ const handleClose = async () => {
   getTree()
 }
 
+const showChange = () => {
+  const oldDepartData = localStorage.getItem('oldDepartData') ? JSON.parse(localStorage.getItem('oldDepartData')) : []
+  const oldUsers = oldDepartData.find(item => item.id === departmentId.value)?.users || []
+  const newUsers = localStorage.getItem('departData')? JSON.parse(localStorage.getItem('departData')).find(item => item.id === departmentId.value)?.users || [] : []
+  const addUsers = newUsers.filter(item => !oldUsers.includes(item))
+  const delUsers = oldUsers.filter(item => !newUsers.includes(item))
+    ElMessage({
+      message: `新增：${addUsers.join(',')} <br/> 减少：${delUsers.join(',')}`,
+      type: 'warning',
+    })
+
+}
+
 </script>
 
 <template>
@@ -256,6 +274,7 @@ const handleClose = async () => {
         <el-input v-model="searchText" class="search-input" :prefix-icon="Search" placeholder="搜索" clearable></el-input>
         <el-button @click="search" class="search-btn" type="primary">搜索</el-button>
         <el-button @click="flash" class="flash-btn" type="warning">人数刷新</el-button>
+        <el-button @click="showChange" class="flash-btn" type="success">成员对比</el-button>
         <div class="tips" v-if="userList[0]">共<span class="num">{{ total }}</span>人</div>
       </div>
       <el-scrollbar class="scrollMenuBox" @scroll="barScroll" ref="scrollbarRef">
