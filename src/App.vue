@@ -75,7 +75,7 @@ const getDepartNum = async () => {
       treeItem.num = localDepartItem.num
       treeItem.oldNum = oldLocalDepartItem.num
       treeItem.users = localDepartItem.users || []
-      treeItem.name = `${treeItem.name}(${treeItem.oldNum ? treeItem.oldNum + '>' : ''}${treeItem.num})`
+      treeItem.showName = `${treeItem.name}(${treeItem.oldNum ? treeItem.oldNum + '>' : ''}${treeItem.num})`
     } else {
       const res = await instance.get('Contacts/staffV2', {
         params: { 'page_num': 1, 'page_size': 100, 'department_id': treeItem.id, 'content': '' }
@@ -84,7 +84,7 @@ const getDepartNum = async () => {
         treeItem.num = res.Data.total || 0
         treeItem.oldNum = oldLocalDepartItem.num
         treeItem.users = res.Data.users?.map(item => { return item.name }) || []
-        treeItem.name = `${treeItem.name}(${treeItem.oldNum ? treeItem.oldNum + '>' : ''}${treeItem.num})`
+        treeItem.showName = `${treeItem.name}(${treeItem.oldNum ? treeItem.oldNum + '>' : ''}${treeItem.num})`
       }
       departData.push({
         id: treeItem.id,
@@ -290,7 +290,7 @@ const showChange = () => {
         <el-tree
           class="left-tree"
           :data="tree"
-          :props="{ children: 'children', label: 'name' }"
+          :props="{ children: 'children', label: 'showName' }"
           @node-click="handleNodeClick"
         />
       </el-scrollbar>
