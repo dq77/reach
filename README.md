@@ -16,12 +16,16 @@ const instance = axios.create({
 ```
 
 > 域名后面的请求前缀'reach'不要改，不用管。
->
-> 请确保域名已做好解析并且正确配置了证书
 
-然后在域名对应的服务器上配置nginx的代理转发规则如下：
+服务端部署一共有两种方式，分别为 **服务器Nginx模式** 和 **Cloudflare Worker模式**
 
-> 此处假设在`src/api.js`中配置的baseURL为'test.domain.com'
+
+
+##### 首先说第一种：服务器Nginx模式
+
+请确保域名已做好解析并且正确配置了证书，然后在域名对应的服务器上配置nginx的代理转发规则如下：
+
+> 此处假设在`src/api.js`中配置的baseURL为'https://test.domain.com/reach'
 
 ```
     server {
@@ -53,6 +57,85 @@ const instance = axios.create({
 ```
 
 配置好后别忘了重启nginx配置生效。至此服务端配置完毕，接下来配置客户端。
+
+
+
+##### 第二种模式：Cloudflare Worker模式
+
+新建一个Cloudflare的Worker，名字随便起，内容全文粘贴如下：
+
+```
+addEventListener('fetch', (event) => {
+  event.respondWith(handleRequest(event.request));
+});
+
+async function handleRequest(request) {
+  const url = new URL(request.url);
+  
+  // 检查是否是预检请求
+  if (request.method === 'OPTIONS') {
+    return new Response(null, {
+      headers: {
+        'Access-Control-Allow-Origin': request.headers.get('Origin') || '*',
+        'Access-Control-Allow-Methods': 'GET, HEAD, POST, OPTIONS',
+        'Access-Control-Allow-Headers': '*',
+        'Access-Control-Allow-Credentials': 'true',
+        'Access-Control-Max-Age': '86400'
+      }
+    });
+  }
+
+  // 设置客户端cookie请求
+  const cookieValue = url.searchParams.get('cookievalue');
+  if (cookieValue) {
+    return new Response('Parameter received: ' + cookieValue, {
+      headers: {
+        'Access-Control-Allow-Origin': request.headers.get('Origin') || '*',
+        'Access-Control-Allow-Credentials': 'true',
+        'Set-Cookie': `ssn_Tita_PC=${cookieValue}; Path=/; SameSite=None; Secure`,
+        'Content-Type': 'text/html'
+      }
+    });
+  }
+
+  // 移除URL中的reach前缀
+  let pathname = url.pathname;
+  if (pathname.startsWith('/reach/')) {
+    pathname = pathname.replace('/reach/', '/');
+  }
+
+  // 转发请求到目标服务器
+  const targetUrl = new URL('https://account.italent.cn' + pathname);
+
+  url.searchParams.forEach((value, key) => {
+    targetUrl.searchParams.append(key, value);
+  });
+  const modifiedRequest = new Request(targetUrl.toString(), {
+    method: request.method,
+    headers: request.headers,
+    body: request.body
+  });
+
+  try {
+    let response = await fetch(modifiedRequest);
+
+    // 克隆响应并添加 CORS 头
+    response = new Response(response.body, response);
+    response.headers.set('Access-Control-Allow-Origin', request.headers.get('Origin') || '*');
+    response.headers.set('Access-Control-Allow-Credentials', 'true');
+    
+    return response;
+  } catch (error) {
+    return new Response('Error: ' + error.message, { status: 500 });
+  }
+}
+```
+
+然后发布Worker，新建一个自定义二级域名 test.domain.com 即可。
+
+> 此处假设在`src/api.js`中配置的baseURL为'https://test.domain.com/reach'。
+
+
 
 #### 本地客户端
 

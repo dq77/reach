@@ -11,9 +11,7 @@ onMounted(async () => {
 })
 
 const getTree = async () => {
-  const res = await instance.get('Contacts/AllowDepartment', {
-    params: { 'quark_s': '1ec5eb2cd9eaf8d3fbe130f5622c1ff5fe0e976e2c0f21da3beadc30e5c55bd5' } // 东软睿驰公司ID
-  })
+  const res = await instance.get('Contacts/AllowDepartment')
   if (res.Code === 1) {
     // 先筛出来一级 再二级 再三级 为避免重复遍历 筛完的不再参与下次筛选
     const level2 = [] // 筛选完一级后剩下的
@@ -43,7 +41,7 @@ const getTree = async () => {
         parentNode.children.push(item)
       }
     })
-  } else if (res === 'Redirect was intercepted.') {
+  } else if (res.includes('登录失效')) {
     ElMessage({
       message: 'Cookie失效，请重新设置Cookie',
       type: 'error',
