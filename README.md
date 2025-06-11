@@ -23,9 +23,11 @@ const instance = axios.create({
 
 ##### 首先说第一种：服务器Nginx模式
 
-请确保域名已做好解析并且正确配置了证书，然后在域名对应的服务器上配置nginx的代理转发规则如下：
-
+> 请确保域名已做好解析并且正确配置了证书
+>
 > 此处假设在`src/api.js`中配置的baseURL为'https://test.domain.com/reach'
+
+然后在域名对应的服务器上配置nginx的代理转发规则如下：
 
 ```
     server {
