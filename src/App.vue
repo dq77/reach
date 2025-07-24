@@ -241,7 +241,7 @@ const handleClose = async () => {
 
   // 设置Cookie
   await instance.post('loginehr/Account/Login', {
-    UserName: `${cookieInput.value}@reachauto.com`,
+    UserName: `${cookieInput.value}@reach${cookieInput.value ? '' : ''}auto.com`,
     Password: 'bzNRJ0YCWG64WkNWyCiCCbmKMzF+o+Xc+sFk7qIhyOUK406dq9zn3HrvFhkjboSZieypYJzIGnqKr4DgWR3VKmqBhboqf2SeD009DPwL7Cr698DMAfRPWhCiXssPZN08gKca1Th4TCHwt9TvOdXSrmA945/DJ0a7ME4ciHbdf2c=',
   })
   showDialog.value = false
@@ -312,13 +312,15 @@ const showChange = () => {
       </el-scrollbar>
     </div>
   </div>
-  <el-dialog v-model="showDialog" title="输入Cookie" width="730" :before-close="handleClose">
+  <el-dialog v-model="showDialog" title="输入Cookie" width="400" :before-close="handleClose">
     <div class="dialog-tips">
       <span>本系统依赖网站Cookie方可使用，请登录 </span>
     </div>
     <div style="margin-top: 8px">
-      <el-input v-model="cookieInput" class="cookie-input" placeholder="请输入用户名">
-        <template #prepend>用户名</template>
+      <el-input v-model="cookieInput" class="cookie-input" placeholder="wang">
+        <span>你好</span>
+        <template #prepend>请输入用户名：</template>
+        <template #append>@reahcuato.com</template>
       </el-input>
     </div>
     <template #footer>
