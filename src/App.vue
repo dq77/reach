@@ -11,7 +11,7 @@ onMounted(async () => {
 })
 
 const getTree = async () => {
-  const res = await instance.get('Contacts/AllowDepartment')
+  const res = await instance.get('reach/Contacts/AllowDepartment')
   if (res.Code === 1) {
     // 先筛出来一级 再二级 再三级 为避免重复遍历 筛完的不再参与下次筛选
     const level2 = [] // 筛选完一级后剩下的
@@ -75,7 +75,7 @@ const getDepartNum = async () => {
       treeItem.users = localDepartItem.users || []
       treeItem.showName = `${treeItem.name}(${treeItem.oldNum ? treeItem.oldNum + '>' : ''}${treeItem.num})`
     } else {
-      const res = await instance.get('Contacts/staffV2', {
+      const res = await instance.get('reach/Contacts/staffV2', {
         params: { 'page_num': 1, 'page_size': 100, 'department_id': treeItem.id, 'content': '' }
       })
       if (res.Code === 1 && res.Data) {
@@ -129,7 +129,7 @@ const getUserDetail = async () => {
       item.Email = localUserItem.Email
       item.EmployedDate = localUserItem.EmployedDate
     } else {
-      const res = await instance.get('Contacts/GetUserInfoById', {
+      const res = await instance.get('reach/Contacts/GetUserInfoById', {
         params: {
           'toUserId': item.userId,
         }
@@ -159,7 +159,7 @@ const isSearch = ref(false)
 const searchText = ref('')
 const getData = async(treeItem) => {
   // 部门点击和搜索调用不同的接口
-  const api = isSearch.value ? 'Contacts/searchV2' : 'Contacts/staffV2'
+  const api = isSearch.value ? 'reach/Contacts/searchV2' : 'reach/Contacts/staffV2'
   const res = await instance.get(api, {
     params: {
       'page_num': pageNum.value,
@@ -220,7 +220,7 @@ const barScroll = throttle(function(e) {
 // 点击名片触发获取用户邮箱和入职时间
 const getUserInfo = async (item) => {
   if (item.Email) return false
-  const res = await instance.get('Contacts/GetUserInfoById', {
+  const res = await instance.get('reach/Contacts/GetUserInfoById', {
     params: {
       'toUserId': item.userId,
     }
@@ -234,15 +234,15 @@ const cookieInput = ref('')
 const handleClose = async () => {
   if (!cookieInput.value) {
     return ElMessage({
-      message: '请输入ssn_Tita_PC',
+      message: '请输入用户名',
       type: 'error',
     })
   }
+
   // 设置Cookie
-  await instance.get('setCookie', {
-    params: {
-      'cookievalue': cookieInput.value,
-    }
+  await instance.post('loginehr/Account/Login', {
+    UserName: `${cookieInput.value}@reachauto.com`,
+    Password: 'bzNRJ0YCWG64WkNWyCiCCbmKMzF+o+Xc+sFk7qIhyOUK406dq9zn3HrvFhkjboSZieypYJzIGnqKr4DgWR3VKmqBhboqf2SeD009DPwL7Cr698DMAfRPWhCiXssPZN08gKca1Th4TCHwt9TvOdXSrmA945/DJ0a7ME4ciHbdf2c=',
   })
   showDialog.value = false
   getTree()
@@ -315,12 +315,10 @@ const showChange = () => {
   <el-dialog v-model="showDialog" title="输入Cookie" width="730" :before-close="handleClose">
     <div class="dialog-tips">
       <span>本系统依赖网站Cookie方可使用，请登录 </span>
-      <el-link href="https://www.italent.cn/Login" target="_blank" type="primary">https://www.italent.cn/Login</el-link>
-      <span>，在F12中查看 "Cookie" 。获取 "Cookie" 中的 "ssn_Tita_PC" 字段值，复制并粘贴至下方。</span>
     </div>
     <div style="margin-top: 8px">
-      <el-input v-model="cookieInput" class="cookie-input" placeholder="HLiBrc4kK04L......">
-        <template #prepend>ssn_Tita_PC</template>
+      <el-input v-model="cookieInput" class="cookie-input" placeholder="请输入用户名">
+        <template #prepend>用户名</template>
       </el-input>
     </div>
     <template #footer>
