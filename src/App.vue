@@ -33,7 +33,7 @@ const getTree = async () => {
         level3.push(item)
       }
     })
-    // 剔除一二级后剩下的三级数据 还有个零级东软睿驰这里扔掉不要了
+    // 剔除一二级后剩下的三级数据 还有个零级没用这里扔掉不要了
     level3.forEach(item => {
       if (item.level === 3) {
         const parentNode = level2.find(parent => parent.id === item.pid)
@@ -58,12 +58,18 @@ const totalLength = ref(0)
 const getDepartNum = async () => {
   const departData = localStorage.getItem('departData') ? JSON.parse(localStorage.getItem('departData')) : []
   const oldDepartData = localStorage.getItem('oldDepartData') ? JSON.parse(localStorage.getItem('oldDepartData')) : []
-  let list = tree.value
-  list.forEach(item => {
-    if (item.children && Array.isArray(item.children)) {
-      list = list.concat(item.children);
-    }
-  })
+
+  let list = []
+  const pushFunc = (listParam) => {
+    list.push(...listParam)
+    listParam.forEach(item => {
+      if (item.children && Array.isArray(item.children)) {
+        pushFunc(item.children)
+      }
+    })
+  }
+  pushFunc(tree.value)
+
   flashIndex.value = 0
   totalLength.value = list.length
   for (const treeItem of list) {
