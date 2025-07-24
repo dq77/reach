@@ -43,7 +43,7 @@ const getTree = async () => {
     })
   } else if (res.includes('登录失效')) {
     ElMessage({
-      message: 'Cookie失效，请重新设置Cookie',
+      message: 'Cookie失效，请重新登录',
       type: 'error',
     })
     showDialog.value = true
