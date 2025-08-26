@@ -11,7 +11,7 @@ onMounted(async () => {
 })
 
 const getTree = async () => {
-  const res = await instance.get('reach/Contacts/AllowDepartment')
+  const res = await instance.get(`reach/Contacts/AllowDepartment?t=${new Date().getTime()}`)
   if (res.Code === 1) {
     // 先筛出来一级 再二级 再三级 为避免重复遍历 筛完的不再参与下次筛选
     const level2 = [] // 筛选完一级后剩下的
@@ -171,7 +171,8 @@ const getData = async(treeItem) => {
       'page_num': pageNum.value,
       'page_size': 50,
       'department_id': departmentId.value,
-      'content': searchText.value
+      'content': searchText.value,
+      't': new Date().getTime(),
     }
   })
   if (res.Code === 1) {
