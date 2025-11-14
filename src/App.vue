@@ -3,6 +3,7 @@ import { onMounted, ref, computed } from 'vue'
 import instance from './api'
 import throttle from 'lodash/throttle'
 import { Search } from '@element-plus/icons-vue'
+import { getTreeData, getDepartAllUser } from './util'
 
 const tree = ref([])
 const showDialog = ref(false)
@@ -11,46 +12,19 @@ onMounted(async () => {
 })
 
 const getTree = async () => {
-  const res = await instance.get(`reach/Contacts/AllowDepartment?t=${new Date().getTime()}`)
-  if (res.Code === 1) {
-    // 先筛出来一级 再二级 再三级 为避免重复遍历 筛完的不再参与下次筛选
-    const level2 = [] // 筛选完一级后剩下的
-    const level3 = [] // 筛选完二级后剩下的
-    res.Data.forEach(item => {
-      if (item.level === 1) {
-        tree.value.push(item)
-      } else {
-        level2.push(item)
-      }
-    })
-    // 剔除一级后剩下的二级和三级数据
-    level2.forEach(item => {
-      if (item.level === 2) {
-        const parentNode = tree.value.find(parent => parent.id === item.pid)
-        parentNode.children || (parentNode.children = [])
-        parentNode.children.push(item)
-      } else {
-        level3.push(item)
-      }
-    })
-    // 剔除一二级后剩下的三级数据 还有个零级没用这里扔掉不要了
-    level3.forEach(item => {
-      if (item.level === 3) {
-        const parentNode = level2.find(parent => parent.id === item.pid)
-        parentNode.children || (parentNode.children = [])
-        parentNode.children.push(item)
-      }
-    })
-  } else if (res.includes('登录失效')) {
+  const res = await getTreeData()
+  if (res === '登录失效') {
     ElMessage({
       message: 'Cookie失效，请重新登录',
       type: 'error',
     })
     showDialog.value = true
+  } else {
+    tree.value = res
+    // 进来默认展示全部数据
+    await search()
+    getDepartNum()
   }
-  // 进来默认展示全部数据
-  await search()
-  getDepartNum()
 }
 
 const flashIndex = ref(0)
@@ -59,7 +33,7 @@ const getDepartNum = async () => {
   const departData = localStorage.getItem('departData') ? JSON.parse(localStorage.getItem('departData')) : []
   const oldDepartData = localStorage.getItem('oldDepartData') ? JSON.parse(localStorage.getItem('oldDepartData')) : []
 
-  let list = []
+  let list = [] // 树扁平化至一维
   const pushFunc = (listParam) => {
     list.push(...listParam)
     listParam.forEach(item => {
@@ -75,21 +49,17 @@ const getDepartNum = async () => {
   for (const treeItem of list) {
     const localDepartItem = departData.find(ele => ele.id === treeItem.id)
     const oldLocalDepartItem = oldDepartData.find(ele => ele.id === treeItem.id) || {}
-    if (localDepartItem) {
+    if (localDepartItem) { // 部门本地有数据 则不去调接口了
       treeItem.num = localDepartItem.num
       treeItem.oldNum = oldLocalDepartItem.num
       treeItem.users = localDepartItem.users || []
       treeItem.showName = `${treeItem.name}(${treeItem.oldNum ? treeItem.oldNum + '>' : ''}${treeItem.num})`
     } else {
-      const res = await instance.get('reach/Contacts/staffV2', {
-        params: { 'page_num': 1, 'page_size': 100, 'department_id': treeItem.id, 'content': '' }
-      })
-      if (res.Code === 1 && res.Data) {
-        treeItem.num = res.Data.total || 0
-        treeItem.oldNum = oldLocalDepartItem.num
-        treeItem.users = res.Data.users?.map(item => { return item.name }) || []
-        treeItem.showName = `${treeItem.name}(${treeItem.oldNum ? treeItem.oldNum + '>' : ''}${treeItem.num})`
-      }
+      const resUserList = await getDepartAllUser(treeItem.id)
+      treeItem.num = resUserList.length || 0
+      treeItem.oldNum = oldLocalDepartItem.num
+      treeItem.users = resUserList.map(item => { return item.name }) || []
+      treeItem.showName = `${treeItem.name}(${treeItem.oldNum ? treeItem.oldNum + '>' : ''}${treeItem.num})`
       departData.push({
         id: treeItem.id,
         users: treeItem.users,
@@ -126,7 +96,8 @@ const flash = async () => {
   getDepartNum()
 }
 
-const getUserDetail = async () => {
+// 获取本地加载过的用户详细信息
+const getUserLocalDetail = async () => {
   const userData = localStorage.getItem('userData') ? JSON.parse(localStorage.getItem('userData')) : []
   for (const item of userList.value) {
     if (item.Email) continue
@@ -134,23 +105,6 @@ const getUserDetail = async () => {
     if (localUserItem) {
       item.Email = localUserItem.Email
       item.EmployedDate = localUserItem.EmployedDate
-    } else {
-      const res = await instance.get('reach/Contacts/GetUserInfoById', {
-        params: {
-          'toUserId': item.userId,
-        }
-      })
-      if (res.Code === 200) {
-        item.Email = res.Data.Email
-        item.EmployedDate = res.Data.EmployedDate
-        item.name = res.Data.Name
-      }
-      userData.push({
-        userId: item.userId,
-        name: item.name,
-        Email: item.Email,
-        EmployedDate: item.EmployedDate
-      })
     }
   }
   localStorage.setItem('userData', JSON.stringify(userData))
@@ -158,18 +112,20 @@ const getUserDetail = async () => {
 
 const loading = ref(true)
 const pageNum = ref(1)
-const departmentId = ref(0)
+const departmentId = ref(0) // 选中的当前部门ID
 const total = ref(0)
-const userList = ref([])
-const isSearch = ref(false)
+const userList = ref([]) // 右侧展示的用户列表
+const isSearch = ref(false) // true：搜索按钮触发  false：部门点击触发
 const searchText = ref('')
-const getData = async(treeItem) => {
+
+// 获取右侧用户基本数据
+const getData = async() => {
   // 部门点击和搜索调用不同的接口
   const api = isSearch.value ? 'reach/Contacts/searchV2' : 'reach/Contacts/staffV2'
   const res = await instance.get(api, {
     params: {
       'page_num': pageNum.value,
-      'page_size': 50,
+      'page_size': 100,
       'department_id': departmentId.value,
       'content': searchText.value,
       't': new Date().getTime(),
@@ -180,7 +136,7 @@ const getData = async(treeItem) => {
       total.value = res.Data.total
       userList.value.push(...res.Data.users)
       loading.value = userList.value.length < total.value
-      getUserDetail()
+      getUserLocalDetail()
     } else {
       total.value = 0
       userList.value = []
@@ -235,6 +191,14 @@ const getUserInfo = async (item) => {
   if (res.Code === 200) {
     item.Email = res.Data.Email
     item.EmployedDate = res.Data.EmployedDate
+    const userData = localStorage.getItem('userData') ? JSON.parse(localStorage.getItem('userData')) : []
+    userData.push({
+      userId: item.userId,
+      name: item.name,
+      Email: item.Email,
+      EmployedDate: item.EmployedDate
+    })
+    localStorage.setItem('userData', JSON.stringify(userData))
   }
 }
 const cookieInput = ref('')
@@ -255,8 +219,8 @@ const handleClose = async () => {
   getTree()
 }
 
+// 全量对比
 const showChange = () => {
-  // 仅限前100人对比
   const oldDepartDataStr = localStorage.getItem('oldDepartData')
   const departDataStr = localStorage.getItem('departData')
   if (!oldDepartDataStr || !departDataStr) {
