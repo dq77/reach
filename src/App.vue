@@ -210,10 +210,10 @@ const handleClose = async () => {
     })
   }
 
-  // 设置Cookie
+  // 设置Cookie 密码自己从网站获取
   await instance.post('loginehr/Account/Login', {
     UserName: `${cookieInput.value}@reach${cookieInput.value ? '' : ''}auto.com`,
-    Password: 'bzNRJ0YCWG64WkNWyCiCCbmKMzF+o+Xc+sFk7qIhyOUK406dq9zn3HrvFhkjboSZieypYJzIGnqKr4DgWR3VKmqBhboqf2SeD009DPwL7Cr698DMAfRPWhCiXssPZN08gKca1Th4TCHwt9TvOdXSrmA945/DJ0a7ME4ciHbdf2c=',
+    Password: 'KPeaqs4kmEkNOaZp3tgd8pzfXch1Qp6V5TH9r7JXNOz+7PxXoiQSqEUJJwmf4NKypdRBkc8l9x8WLZo7se+I47/DcnWW32LUAbcA9zhrqI3X11MoOVp9TXvSTNfmNIBpB72OlTE0eb2u3cV2J4GUM1t0Rhz+qmwUVH2+Aeodg3o=',
   })
   showDialog.value = false
   getTree()
