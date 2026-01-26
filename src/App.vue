@@ -205,15 +205,16 @@ const cookieInput = ref('')
 const handleClose = async () => {
   if (!cookieInput.value) {
     return ElMessage({
-      message: '请输入用户名',
+      message: '请输入ssn_Tita_PC',
       type: 'error',
     })
   }
 
-  // 设置Cookie 密码自己从网站获取
-  await instance.post('loginehr/Account/Login', {
-    UserName: `${cookieInput.value}@reach${cookieInput.value ? '' : ''}auto.com`,
-    Password: 'KPeaqs4kmEkNOaZp3tgd8pzfXch1Qp6V5TH9r7JXNOz+7PxXoiQSqEUJJwmf4NKypdRBkc8l9x8WLZo7se+I47/DcnWW32LUAbcA9zhrqI3X11MoOVp9TXvSTNfmNIBpB72OlTE0eb2u3cV2J4GUM1t0Rhz+qmwUVH2+Aeodg3o=',
+  // 设置Cookie 
+  await instance.get('reach/setCookie', {
+    params: {
+      'cookievalue': cookieInput.value,
+    }
   })
   showDialog.value = false
   getTree()
@@ -286,12 +287,12 @@ const showChange = () => {
   <el-dialog v-model="showDialog" title="输入Cookie" width="400" :before-close="handleClose">
     <div class="dialog-tips">
       <span>本系统依赖网站Cookie方可使用，请登录 </span>
+      <el-link href="https://www.italent.cn/Login" target="_blank" type="primary">https://www.italent.cn/Login</el-link>
+      <span>，在F12中查看 "Cookie" 。获取 "Cookie" 中的 "ssn_Tita_PC" 字段值，复制并粘贴至下方。</span>
     </div>
     <div style="margin-top: 8px">
-      <el-input v-model="cookieInput" class="cookie-input" placeholder="wang">
-        <span>你好</span>
-        <template #prepend>请输入用户名：</template>
-        <template #append>@reahcuato.com</template>
+      <el-input v-model="cookieInput" class="cookie-input" placeholder="HLiBrc4kK04L......">
+        <template #prepend>ssn_Tita_PC</template>
       </el-input>
     </div>
     <template #footer>

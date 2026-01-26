@@ -33,9 +33,6 @@ async function handleRequest(request) {
     }
     pathname = pathname.replace('/reach/', '/');
     targetUrl = new URL('https://account.italent.cn' + pathname);
-  } else if (pathname.startsWith('/loginehr/')) {
-    pathname = pathname.replace('/loginehr/', '/');
-    targetUrl = new URL('https://www.italent.cn' + pathname);
   } else if (pathname.startsWith('/weather/')) {
     pathname = pathname.replace('/weather/', '/');
     targetUrl = new URL('https://products.weather.com.cn' + pathname);
