@@ -319,7 +319,7 @@ const showChange = async () => {
     </template>
   </el-dialog>
   <!-- 成员对比弹窗 -->
-  <el-dialog v-model="personDialog" :modal="false" :title="changeUser[0]? changeUser[0].department: '成员对比'" width="500" modal-penetrable>
+  <el-dialog v-model="personDialog" :modal="false" title="成员对比" width="500" modal-penetrable>
     <div v-if="changeUser.length" style="font-size: 16px;">
       <div class="title row" style="font-weight: bold; border-top: 1px solid #e5e5e5;">
         <div class="col" style="width: 80px;">姓名</div>
