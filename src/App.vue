@@ -6,7 +6,7 @@ import { Search } from '@element-plus/icons-vue'
 import { getTreeData, getDepartAllUser } from './util'
 
 const tree = ref([])
-const showDialog = ref(false)
+const loginDialog = ref(false)
 onMounted(async () => {
   await getTree()
 })
@@ -18,7 +18,7 @@ const getTree = async () => {
       message: 'Cookie失效，请重新登录',
       type: 'error',
     })
-    showDialog.value = true
+    loginDialog.value = true
   } else {
     tree.value = res
     // 进来默认展示全部数据
@@ -58,7 +58,7 @@ const getDepartNum = async () => {
       const resUserList = await getDepartAllUser(treeItem.id)
       treeItem.num = resUserList.length || 0
       treeItem.oldNum = oldLocalDepartItem.num
-      treeItem.users = resUserList.map(item => { return item.name }) || []
+      treeItem.users = resUserList.map(item => { return { name: item.name, userId: item.userId, department: item.department, departmentPath: item.departmentPath } }) || []
       treeItem.showName = `${treeItem.name}(${treeItem.oldNum ? treeItem.oldNum + '>' : ''}${treeItem.num})`
       departData.push({
         id: treeItem.id,
@@ -97,9 +97,9 @@ const flash = async () => {
 }
 
 // 获取本地加载过的用户详细信息
-const getUserLocalDetail = async () => {
+const getUserLocalDetail = async (userList) => {
   const userData = localStorage.getItem('userData') ? JSON.parse(localStorage.getItem('userData')) : []
-  for (const item of userList.value) {
+  for (const item of userList) {
     if (item.Email) continue
     const localUserItem = userData.find(ele => ele.userId === item.userId)
     if (localUserItem) {
@@ -136,7 +136,7 @@ const getData = async() => {
       total.value = res.Data.total
       userList.value.push(...res.Data.users)
       loading.value = userList.value.length < total.value
-      getUserLocalDetail()
+      getUserLocalDetail(userList.value)
     } else {
       total.value = 0
       userList.value = []
@@ -182,7 +182,7 @@ const barScroll = throttle(function(e) {
 
 // 点击名片触发获取用户邮箱和入职时间
 const getUserInfo = async (item) => {
-  if (item.Email) return false
+  if (item.Email) return false // 本地已经含有Email等基本信息 无需再从云端获取数据
   const res = await instance.get('reach/Contacts/GetUserInfoById', {
     params: {
       'toUserId': item.userId,
@@ -195,6 +195,7 @@ const getUserInfo = async (item) => {
     userData.push({
       userId: item.userId,
       name: item.name,
+      DepartmentName: item.DepartmentName,
       Email: item.Email,
       EmployedDate: item.EmployedDate
     })
@@ -220,35 +221,37 @@ const handleClose = async () => {
   getTree()
 }
 
+const personDialog = ref(false)
+const changeUser = ref([])
 // 全量对比
-const showChange = () => {
+const showChange = async () => {
   const oldDepartDataStr = localStorage.getItem('oldDepartData')
   const departDataStr = localStorage.getItem('departData')
-  if (!oldDepartDataStr || !departDataStr) {
-    return ElMessage({
-      message: '不存在历史数据，请先进行人数刷新',
-      type: 'error',
-    })
+  if (!departDataStr) {
+    return ElMessage({ message: '请等待数据加载完成后再操作。', type: 'error' })
+  }
+  if (!oldDepartDataStr) {
+    return ElMessage({ message: '不存在历史数据，请先进行人数刷新', type: 'error' })
   }
   const oldDepartData = JSON.parse(oldDepartDataStr)
   const departData = JSON.parse(departDataStr)
   const oldUsers = oldDepartData.find(item => item.id === departmentId.value)?.users || []
   const newUsers = departData.find(item => item.id === departmentId.value)?.users || []
-  const addUsers = newUsers.filter(item => !oldUsers.includes(item))
-  const delUsers = oldUsers.filter(item => !newUsers.includes(item))
-  if (addUsers.length) {
-    ElMessage({
-      message: `新增：${addUsers.join(',')}`,
-      type: 'warning',
-    })
+  const addUsers = newUsers.filter(item => !oldUsers.some(ele => ele.userId === item.userId))
+  const delUsers = oldUsers.filter(item => !newUsers.some(ele => ele.userId === item.userId))
+  changeUser.value = [...addUsers.map(item => ({ ...item, type: 'add' })), ...delUsers.map(item => ({ ...item, type: 'del' }))]
+  if (changeUser.value.length) {
+    personDialog.value = true
+    // 先获取本地已加载的用户详细信息
+    getUserLocalDetail(changeUser.value)
+    // 本地没有的再从云端获取数据
+    for (const item of changeUser.value) {
+      if (item.Email) continue
+      await getUserInfo(item)
+    }
+  } else {
+    ElMessage({ message: '无成员对比结果', type: 'info' })
   }
-  if (delUsers.length) {
-    ElMessage({
-      message: `删除：${delUsers.join(',')}`,
-      type: 'warning',
-    })
-  }
-
 }
 
 </script>
@@ -284,7 +287,7 @@ const showChange = () => {
       </el-scrollbar>
     </div>
   </div>
-  <el-dialog v-model="showDialog" title="输入Cookie" width="400" :before-close="handleClose">
+  <el-dialog v-model="loginDialog" title="输入Cookie" width="400" :before-close="handleClose">
     <div class="dialog-tips">
       <span>本系统依赖网站Cookie方可使用，请登录 </span>
       <el-link href="https://www.italent.cn/Login" target="_blank" type="primary">https://www.italent.cn/Login</el-link>
@@ -301,13 +304,8 @@ const showChange = () => {
       </div>
     </template>
   </el-dialog>
-  <el-dialog
-    v-model="flashDialog"
-    :close-on-click-modal='false'
-    :show-close='false'
-    title="刷新中，请稍候"
-    width="500"
-  >
+  <!-- 刷新弹窗 -->
+  <el-dialog v-model="flashDialog" :close-on-click-modal='false' :show-close='false' title="刷新中，请稍候" width="500">
     <el-text v-if="flashIndex !== totalLength" class="mx-1" type="primary">刷新中请不要关闭本页面，请耐心等待。</el-text>
     <el-text v-else class="mx-1" type="success">刷新完成！</el-text>
     <el-progress :percentage='percentage' :showText='false' :stroke-width="15" :status="flashIndex === totalLength ? 'success' : ''" style='margin: 14px 0;'/>
@@ -319,6 +317,21 @@ const showChange = () => {
         </el-button>
       </div>
     </template>
+  </el-dialog>
+  <!-- 成员对比弹窗 -->
+  <el-dialog v-model="personDialog" :modal="false" :title="changeUser[0]? changeUser[0].department: '成员对比'" width="500" modal-penetrable>
+    <div v-if="changeUser.length" style="font-size: 16px;">
+      <div class="title row" style="font-weight: bold; border-top: 1px solid #e5e5e5;">
+        <div class="col" style="width: 80px;">姓名</div>
+        <div class="col" style="width: 110px;">入职日期</div>
+        <div class="col" style="flex: 1;">邮箱</div>
+      </div>
+      <div :class="`row ${item.type}`" v-for="item in changeUser" :key="item.userId">
+        <div class="col" style="width: 80px;">{{ item.name }}</div>
+        <div class="col" style="width: 110px;">{{ item.EmployedDate ? item.EmployedDate.slice(0, 10) : '' }}</div>
+        <div class="col" style="flex: 1;">{{ item.Email }}</div>
+      </div>
+    </div>
   </el-dialog>
 </template>
 
@@ -414,5 +427,19 @@ const showChange = () => {
     display: inline;
     vertical-align: bottom;
   }
+}
+.row{
+  display: flex;
+  padding: 4px 0;
+  border-bottom: 1px solid #e5e5e5;
+}
+.col{
+  width: 200px;
+}
+.add{
+  color: #4b9328;
+}
+.del{
+  color: #c35454;
 }
 </style>
