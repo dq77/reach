@@ -217,7 +217,7 @@ const handleClose = async () => {
       'cookievalue': cookieInput.value,
     }
   })
-  showDialog.value = false
+  loginDialog.value = false
   getTree()
 }
 
