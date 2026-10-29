@@ -31,8 +31,8 @@ const getTree = async () => {
 const flashIndex = ref(0)
 const totalLength = ref(0)
 const getDepartNum = async () => {
-  let departData = JSON.parse(localStorage.getItem('departData'))
-  if (!departData) {
+  let departData = JSON.parse(localStorage.getItem('departData')) || []
+  if (!departData.length && !flashDialog.value) {
     const res = await axios.get('https://storage.767766.xyz/?key=departData')
     departData = res.data.data || []
   }
