@@ -4,6 +4,7 @@ import instance from './api'
 import throttle from 'lodash/throttle'
 import { Search } from '@element-plus/icons-vue'
 import { getTreeData, getDepartAllUser } from './util'
+import axios from 'axios'
 
 const tree = ref([])
 const loginDialog = ref(false)
@@ -30,7 +31,11 @@ const getTree = async () => {
 const flashIndex = ref(0)
 const totalLength = ref(0)
 const getDepartNum = async () => {
-  const departData = localStorage.getItem('departData') ? JSON.parse(localStorage.getItem('departData')) : []
+  let departData = JSON.parse(localStorage.getItem('departData'))
+  if (!departData) {
+    const res = await axios.get('https://storage.767766.xyz/?key=departData')
+    departData = res.data.data || []
+  }
   const oldDepartData = localStorage.getItem('oldDepartData') ? JSON.parse(localStorage.getItem('oldDepartData')) : []
 
   let list = [] // 树扁平化至一维
@@ -72,6 +77,7 @@ const getDepartNum = async () => {
   }
   ElMessage({ message: '加载完成', type: 'success' })
   localStorage.setItem('departData', JSON.stringify(departData))
+  axios.post('https://storage.767766.xyz/?key=departData', departData)
 }
 
 
