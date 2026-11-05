@@ -17,7 +17,7 @@ export default defineConfig({
     }),
   ],
   build: {
-    outDir: 'docs', // 默认值是'dist'
+    // outDir: 'docs', // 默认值是'dist'
   },
   server: {
   },
