@@ -6,7 +6,6 @@ import vue from '@vitejs/plugin-vue'
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  // base: 'reach',
   plugins: [
     vue(),
     AutoImport({
@@ -16,9 +15,6 @@ export default defineConfig({
       resolvers: [ElementPlusResolver()],
     }),
   ],
-  build: {
-    // outDir: 'docs', // 默认值是'dist'
-  },
   server: {
   },
 })
