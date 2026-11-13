@@ -1,14 +1,5 @@
 
 export async function onRequest(context) {
-  const headers = {
-    'Access-Control-Allow-Origin': context.request.headers.get('Origin') || '*',
-    'Access-Control-Allow-Methods': 'GET, HEAD, POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type',
-    'Access-Control-Allow-Credentials': 'true'
-  }
-  if (context.request.method === 'OPTIONS') {
-    return new Response(null, { headers });
-  }
   
   // 根据URL匹配路由
   const url = new URL(context.request.url);
@@ -19,9 +10,7 @@ export async function onRequest(context) {
   const cookieValue = url.searchParams.get('cookievalue');
   if (cookieValue) {
     return new Response('Parameter received: ' + cookieValue, {
-      headers: { ...headers,
-        'Set-Cookie': `ssn_Tita_PC=${cookieValue}; Path=/; SameSite=None; Secure`,
-      }
+      headers: { 'Set-Cookie': `ssn_Tita_PC=${cookieValue}; Path=/; SameSite=None; Secure` }
     });
   }
 

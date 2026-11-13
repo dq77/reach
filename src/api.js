@@ -2,7 +2,7 @@ import axios from 'axios'
 
 axios.defaults.withCredentials = true;
 const instance = axios.create({
-  baseURL: 'https://api.767766.xyz', // 此处设置baseURL
+  baseURL: import.meta.env.VITE_API_BASE,
   withCredentials: true,
   timeout: 50000,
 });
