@@ -5,23 +5,10 @@
 由于需要网站Token才可使用，需要先在  [https://www.italent.cn/Login](https://www.italent.cn/Login) 中登录并手动获取 `Cookie` 粘贴至本系统。
 
 #### 使用方式
-首先在项目代码的`src/api.js`中确认定义的域名(baseURL)是否可用，**如果不可用需要更换域名**
-
-```
-const instance = axios.create({
-  baseURL: 'https://test.domain.com/reach', // 此处设置baseURL
-  withCredentials: true,
-  timeout: 50000,
-});
-```
-
-> 域名后面的请求前缀'reach'不要改，不用管。
-
-服务端部署在腾讯云边缘加速服务EO 类似于Cloudflare Worker
+首先在项目代码的`vite.config.js`中确认定义的域名(baseURL)是否可用，**如果不可用需要更换域名**
 
 
-
-登录腾讯云边缘加速服务EdgeOne，新建一个EO的Makers项目，从Github导入：https://github.com/dq77/api
+登录腾讯云边缘加速服务EdgeOne，新建一个EO的Makers项目，直接导入本项目。或者从Github导入：https://github.com/dq77/api
 
 #### 本地客户端
 
