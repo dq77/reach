@@ -32,10 +32,7 @@ export async function onRequest(context) {
     });
 
 
-    // 克隆响应并添加 CORS 头
     const newResponse = new Response(response.body, response);
-    newResponse.headers.set('Access-Control-Allow-Origin', context.request.headers.get('Origin') || '*');
-    newResponse.headers.set('Access-Control-Allow-Credentials', 'true'); // 获取原始 Set-Cookie 头
     // 获取所有 Set-Cookie 头（可能是数组）
     const setCookies = response.headers.get('Set-Cookie');
     if (setCookies) {
