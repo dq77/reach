@@ -33,7 +33,7 @@ const totalLength = ref(0)
 const getDepartNum = async () => {
   let departData = JSON.parse(localStorage.getItem('departData')) || []
   if (!departData.length && !flashDialog.value) {
-    const res = await axios.get('https://reach.767766.xyz/storage/get?key=departData')
+    const res = await axios.get('https://api.767766.xyz/storage/get?key=departData')
     departData = res.data.data || []
   }
   const oldDepartData = localStorage.getItem('oldDepartData') ? JSON.parse(localStorage.getItem('oldDepartData')) : []
@@ -77,7 +77,7 @@ const getDepartNum = async () => {
   }
   ElMessage({ message: '加载完成', type: 'success' })
   localStorage.setItem('departData', JSON.stringify(departData))
-  axios.post('https://reach.767766.xyz/storage/set?key=departData', departData)
+  axios.post('https://api.767766.xyz/storage/set?key=departData', departData)
 }
 
 
